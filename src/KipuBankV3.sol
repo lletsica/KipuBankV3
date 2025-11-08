@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.8.20 <0.8.31;
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/v0.8/interfaces/AggregatorV3Interface.sol";
+import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 /**
  * @title KipuBankV3
  * @author @lletsica
@@ -8,15 +17,6 @@
  *      for security best practices. It integrates with Chainlink price feeds and Uniswap V2
  *      for token swap functionality.
  */
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.20 <0.8.31;
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AggregatorV3Interface} from "@chainlink/contracts/v0.8/interfaces/AggregatorV3Interface.sol";
-import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
     /* ===========================
      * ===== STATE VARIABLES =====
@@ -294,7 +294,6 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
 
         // Check bank cap BEFORE any state changes
         uint256 usdcBefore = USDC_TOKEN.balanceOf(address(this));
-        uint256 expectedTotalUsdc = totalUsdcDeposits; // We'll track this separately
 
         // ===== EFFECTS =====
         // Update user's token balance tracking (if you track input tokens)
@@ -429,7 +428,6 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         if (_amount == 0) revert WithdrawalAmountZero();
         // Cache multiple storage reads
         uint256 _maxLimit = MAX_WITHD_PER_TX;
-        IERC20 _usdcToken = USDC_TOKEN;
         uint256 _balance = userUsdcBalances[msg.sender];
 
         if (_balance < _amount) revert InsufficientUserBalance();
@@ -465,6 +463,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         if (_price <= 0) revert InvalidPrice(_price);
         if (_updatedAt < block.timestamp - 1800)
             revert StalePrice(_price, _updatedAt);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _ethPrice = uint256(_price);
         uint256 _ethUsdValue = (_ethBalance * _ethPrice) / 1e26;
         uint256 _usdcUsdValue = _usdcBalance * 1e12;
@@ -594,4 +593,3 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         revert UnsupportedFunction();
     }
 }
-
