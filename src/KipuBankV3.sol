@@ -379,7 +379,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /* =======================
-     * ===== WITHDRAWAL FUNCTIONS =====
+     * = WITHDRAWAL FUNCTIONS ==
      * ======================= */
 
     /**
@@ -461,7 +461,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         (, int256 _price, , uint256 _updatedAt, ) = PRICE_FEED
             .latestRoundData();
         if (_price <= 0) revert InvalidPrice(_price);
-        if (_updatedAt < block.timestamp - 1800)
+        if (_updatedAt < block.timestamp - 3600)
             revert StalePrice(_price, _updatedAt);
         // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _ethPrice = uint256(_price);
@@ -479,7 +479,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         (, int256 _price, , uint256 _updatedAt, ) = PRICE_FEED
             .latestRoundData();
         if (_price <= 0) revert InvalidPrice(_price);
-        if (_updatedAt < block.timestamp - 1800)
+        if (_updatedAt < block.timestamp - 3600)
             revert StalePrice(_price, _updatedAt);
         return _price;
     }
@@ -496,7 +496,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         (, int256 _price, , uint256 _updatedAt, ) = PRICE_FEED
             .latestRoundData();
         if (_price <= 0) revert InvalidPrice(_price);
-        if (_updatedAt < block.timestamp - 1800)
+        if (_updatedAt < block.timestamp - 3600)
             revert StalePrice(_price, _updatedAt);
         // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _ethPrice = uint256(_price);
@@ -563,13 +563,24 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
         emit EmergencyWithdrawal(msg.sender, _token, _amount);
     }
 
+    /**
+     * @notice Grants the Uniswap V2 Router maximum approval to spend a specific ERC20 token from this contract.
+     * @dev This function sets the allowance of `_token` for the Uniswap router to `type(uint256).max`.
+     *      It is intended to be called once per token to avoid repeated approvals and reduce gas costs.
+     *      Only callable by addresses with the DEFAULT_ADMIN_ROLE.
+     * @param _token The address of the ERC20 token to approve for Uniswap Router interactions.
+     */
+    function approveRouterForToken(address _token) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IERC20(_token).approve(address(UNISWAP_ROUTER), type(uint256).max);
+    }
+    
     /* ===================
      * ===== INTERNAL =====
      * =================== */
 
     /**
      * @notice Internal function to check if a user is whitelisted.
-     * @dev Called by the `onlyWhitelisted` modifier.
+     * @dev Called by the 'onlyWhitelisted' modifier.
      * @param user The address to check.
      */
     function _checkWhitelisted(address user) internal view {
@@ -580,7 +591,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard, Pausable {
      * =================== */
     /**
      * @notice Prevents ETH from being sent to the contract's address using the standard transfer/send method.
-     * @dev Forces users to use the `depositEth` function to track balances correctly.
+     * @dev Forces users to use the 'depositEth' function to track balances correctly.
      */
     receive() external payable {
         revert UseDepositEth();
